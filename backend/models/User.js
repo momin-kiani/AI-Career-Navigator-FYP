@@ -9,7 +9,9 @@ const userSchema = new mongoose.Schema({
   },
   password: {
     type: String,
-    required: true
+    required: function() {
+      return !this.googleId && !this.linkedInId;
+    }
   },
   firstName: {
     type: String,
@@ -19,6 +21,10 @@ const userSchema = new mongoose.Schema({
     type: String,
     required: true
   },
+  googleId: String,
+  linkedInId: String,
+  resetPasswordToken: String,
+  resetPasswordExpires: Date,
   profileImage: String,
   phoneNumber: String,
   location: {
@@ -36,6 +42,11 @@ const userSchema = new mongoose.Schema({
   isEmailVerified: {
     type: Boolean,
     default: false
+  },
+  role: {
+    type: String,
+    enum: ['user', 'student', 'teacher', 'admin'],
+    default: 'user'
   }
 });
 
