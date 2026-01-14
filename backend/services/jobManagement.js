@@ -196,7 +196,7 @@ function matchSkillsWithJob(userSkillsText, jobDescription) {
   if (matchScore < 60) {
     recommendations.push('Your skill match is below average. Consider upskilling in key areas.');
   } else if (matchScore >= 80) {
-    recommendations.push("Excellent skill match! You're well-qualified for this position.");
+    recommendations.push(`Excellent skill match! You're well-qualified for this position.`);
   }
   
   return {

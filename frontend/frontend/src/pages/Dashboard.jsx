@@ -33,7 +33,7 @@ function Dashboard({ user, setCurrentPage }) {
         axios.get('/jobs/applications'),
         axios.get('/resume/list'),
         axios.get('/contacts'),
-        axios.get('/career/progress')
+        axios.get('/career/progress?format=array&dashboard=true')
       ]);
 
       const applications = appsResponse.status === 'fulfilled' ? (appsResponse.value.data || []) : [];

@@ -14,9 +14,52 @@ function ProgressDashboard() {
     setLoading(true);
     try {
       const response = await axios.get('/career/progress');
-      setProgress(response.data);
+      const data = response.data;
+      
+      // Handle both array and object formats
+      if (Array.isArray(data)) {
+        // Convert array format to object format
+        const totalProgress = data.length > 0 
+          ? Math.round(data.reduce((sum, p) => sum + (p.progress || 0), 0) / data.length)
+          : 0;
+        const completedModules = data.filter(p => (p.progress || 0) >= 100).length;
+        
+        setProgress({
+          overall: {
+            overallProgress: totalProgress,
+            completedModules: completedModules,
+            moduleCount: data.length,
+            averageProgress: totalProgress
+          },
+          modules: data
+        });
+      } else if (data && data.overall) {
+        // Already in object format
+        setProgress(data);
+      } else {
+        // Fallback: create default structure
+        setProgress({
+          overall: {
+            overallProgress: 0,
+            completedModules: 0,
+            moduleCount: 0,
+            averageProgress: 0
+          },
+          modules: []
+        });
+      }
     } catch (error) {
       console.error('Error fetching progress:', error);
+      // Set default structure on error
+      setProgress({
+        overall: {
+          overallProgress: 0,
+          completedModules: 0,
+          moduleCount: 0,
+          averageProgress: 0
+        },
+        modules: []
+      });
     } finally {
       setLoading(false);
     }
@@ -38,23 +81,33 @@ function ProgressDashboard() {
     );
   }
 
-  if (!progress) {
+  if (!progress || !progress.overall) {
     return (
       <div className="bg-white rounded-xl shadow-md p-12 text-center">
         <p className="text-gray-600">Unable to load progress data</p>
+        <button
+          onClick={fetchProgress}
+          className="mt-4 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition"
+        >
+          Retry
+        </button>
       </div>
     );
   }
 
+  const overallProgress = progress.overall?.overallProgress || 0;
+  const completedModules = progress.overall?.completedModules || 0;
+  const moduleCount = progress.overall?.moduleCount || 0;
+
   return (
     <div className="space-y-6">
       {/* Overall Progress */}
-      <div className={`bg-gradient-to-br ${getProgressColor(progress.overall.overallProgress)} rounded-xl shadow-md p-8 text-white`}>
+      <div className={`bg-gradient-to-br ${getProgressColor(overallProgress)} rounded-xl shadow-md p-8 text-white`}>
         <div className="text-center">
-          <div className="text-6xl font-bold mb-2">{progress.overall.overallProgress}%</div>
+          <div className="text-6xl font-bold mb-2">{overallProgress}%</div>
           <div className="text-2xl mb-2">Overall Progress</div>
           <p className="text-lg opacity-90">
-            {progress.overall.completedModules} of {progress.overall.moduleCount} modules completed
+            {completedModules} of {moduleCount} modules completed
           </p>
         </div>
       </div>

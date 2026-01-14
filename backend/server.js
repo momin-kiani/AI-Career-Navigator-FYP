@@ -658,24 +658,57 @@ app.post('/api/profile/check-badges', authenticateToken, async (req, res) => {
 app.get('/api/career/progress', authenticateToken, async (req, res) => {
   try {
     const progressRecords = await Progress.find({ userId: req.user.userId });
-    const overallProgress = careerResources.calculateOverallProgress(progressRecords);
+    const overallData = careerResources.calculateOverallProgress(progressRecords);
     
-    // Return array format for frontend compatibility
-    // Frontend expects array of progress objects
-    if (progressRecords.length === 0) {
-      // Return default progress entries for all modules
-      const defaultModules = [
-        { module: 'resume', moduleName: 'Resume Optimization', progress: 0 },
-        { module: 'jobs', moduleName: 'Job Applications', progress: 0 },
-        { module: 'network', moduleName: 'Networking', progress: 0 },
-        { module: 'profile', moduleName: 'Profile Optimization', progress: 0 },
-        { module: 'assessment', moduleName: 'Career Assessment', progress: 0 }
-      ];
-      return res.json(defaultModules);
+    // Return format expected by ProgressDashboard component
+    // Check if request is from Dashboard (expects array) or Resources page (expects object)
+    const userAgent = req.headers['user-agent'] || '';
+    const isDashboardRequest = req.query.format === 'array' || req.query.dashboard === 'true';
+    
+    if (isDashboardRequest) {
+      // Dashboard expects array format
+      if (progressRecords.length === 0) {
+        const defaultModules = [
+          { module: 'resume', moduleName: 'Resume Optimization', progress: 0 },
+          { module: 'jobs', moduleName: 'Job Applications', progress: 0 },
+          { module: 'network', moduleName: 'Networking', progress: 0 },
+          { module: 'profile', moduleName: 'Profile Optimization', progress: 0 },
+          { module: 'assessment', moduleName: 'Career Assessment', progress: 0 }
+        ];
+        return res.json(defaultModules);
+      }
+      return res.json(progressRecords);
     }
     
-    // Return progress records as array
-    res.json(progressRecords);
+    // Resources page expects object format with overall and modules
+    if (progressRecords.length === 0) {
+      return res.json({
+        overall: {
+          overallProgress: 0,
+          completedModules: 0,
+          moduleCount: 0,
+          averageProgress: 0
+        },
+        modules: [
+          { module: 'resume', moduleName: 'Resume Optimization', progress: 0 },
+          { module: 'jobs', moduleName: 'Job Applications', progress: 0 },
+          { module: 'network', moduleName: 'Networking', progress: 0 },
+          { module: 'profile', moduleName: 'Profile Optimization', progress: 0 },
+          { module: 'assessment', moduleName: 'Career Assessment', progress: 0 }
+        ]
+      });
+    }
+    
+    // Return object format for Resources page
+    res.json({
+      overall: {
+        overallProgress: overallData.overallProgress || 0,
+        completedModules: overallData.completedModules || 0,
+        moduleCount: overallData.moduleCount || progressRecords.length,
+        averageProgress: overallData.averageProgress || 0
+      },
+      modules: progressRecords
+    });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
